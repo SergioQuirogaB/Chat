@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Chat{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4>Chat con Documentos</h4>
+            </div>
+            <div class="card-body">
+                <div class="chat-container" id="chatContainer">
+                    {% if response %}
+                    <div class="message bot-message">
+                        {{ response }}
+                    </div>
+                    {% endif %}
+                </div>
+                <form method="POST" id="chatForm">
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="question" placeholder="Escribe tu pregunta..." required>
+                        <button type="submit" class="btn btn-primary">Enviar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h4>Mis Documentos</h4>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% for document in current_user.documents %}
+                    <div class="list-group-item">
+                        {{ document.filename }}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('chatForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const question = this.querySelector('input[name="question"]').value;
+    const chatContainer = document.getElementById('chatContainer');
+    
+    // Agregar mensaje del usuario
+    const userMessage = document.createElement('div');
+    userMessage.className = 'message user-message';
+    userMessage.textContent = question;
+    chatContainer.appendChild(userMessage);
+    
+    // Limpiar el input
+    this.querySelector('input[name="question"]').value = '';
+    
+    // Enviar la pregunta al servidor
+    fetch('/chat', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'question=' + encodeURIComponent(question)
+    })
+    .then(response => response.text())
+    .then(html => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const response = doc.querySelector('.message.bot-message');
+        if (response) {
+            chatContainer.appendChild(response);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+    });
+});
+</script>
+{% endblock %} 
